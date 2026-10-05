@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#03060a" />
+<meta name="description" content="JARVIS 3D — an original cinematic holographic AI interface." />
+<title>JARVIS 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/hud.css" />
+<link rel="stylesheet" href="css/animations.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<!-- ============ BOOT SEQUENCE ============ -->
+<div id="boot" class="boot" aria-hidden="false">
+  <div class="boot-stage">
+    <div class="boot-seed" id="boot-seed"></div>
+    <div class="boot-rings" id="boot-rings">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="boot-scan"></div>
+  </div>
+
+  <div class="boot-readout">
+    <div class="boot-title" id="boot-title">JARVIS 3D</div>
+    <div class="boot-status" id="boot-status">STANDBY</div>
+    <div class="boot-bar"><div class="boot-bar-fill" id="boot-bar"></div></div>
+    <div class="boot-log" id="boot-log"></div>
+  </div>
+
+  <button id="start-btn" class="start-btn" type="button">
+    <span class="start-btn-ring"></span>
+    <span class="start-btn-label">INITIALIZE SYSTEM</span>
+  </button>
+</div>
+
+<!-- ============ STANDBY ============ -->
+<div id="standby" class="standby hidden" aria-hidden="true">
+  <div class="standby-line"></div>
+  <div class="standby-title">SYSTEM STANDBY</div>
+  <div class="standby-sub">All processes suspended</div>
+  <button id="wake-btn" class="wake-btn" type="button">WAKE JARVIS</button>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hud hidden" aria-hidden="true">
+
+  <!-- TOP -->
+  <header class="hud-top">
+    <div class="brand">
+      <div class="brand-mark" id="brand-mark"></div>
+      <div class="brand-text">
+        <div class="brand-name">JARVIS 3D</div>
+        <div class="brand-sub" id="hud-mode">HOME</div>
+      </div>
+    </div>
+
+    <div class="top-status">
+      <div class="status-pill">
+        <span class="status-dot" id="status-dot"></span>
+        <span class="status-word" id="status-word">IDLE</span>
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- LEFT -->
+  <aside class="hud-left">
+    <section class="panel">
+      <div class="panel-title">DIAGNOSTICS</div>
+      <div class="row"><span class="row-k">SESSION</span><span class="row-v" id="d-session">—</span></div>
+      <div class="row"><span class="row-k">LATENCY</span><span class="row-v" id="d-latency">—</span></div>
+      <div class="row"><span class="row-k">RENDER</span><span class="row-v" id="d-fps">—</span></div>
+      <div class="row"><span class="row-k">QUALITY</span><span class="row-v" id="d-quality">AUTO</span></div>
+      <div class="row"><span class="row-k">LOAD</span><span class="row-v" id="d-load">—</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">LOCAL MEMORY</div>
+      <div class="row"><span class="row-k">OPERATOR</span><span class="row-v" id="m-user">UNSET</span></div>
+      <div class="row"><span class="row-k">SESSIONS</span><span class="row-v" id="m-visits">1</span></div>
+      <div class="row"><span class="row-k">LAST MODE</span><span class="row-v" id="m-mode">HOME</span></div>
+      <button class="mini-btn" id="clear-memory" type="button">CLEAR MEMORY</button>
+    </section>
+  </aside>
+
+  <!-- RIGHT -->
+  <aside class="hud-right">
+    <section class="panel">
+      <div class="panel-title">CONTEXT</div>
+      <div class="context" id="context"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-title">ENVIRONMENT</div>
+      <div class="row"><span class="row-k">VIEWPORT</span><span class="row-v" id="e-res">—</span></div>
+      <div class="row"><span class="row-k">LOCALE</span><span class="row-v" id="e-locale">—</span></div>
+      <div class="row"><span class="row-k">NETWORK</span><span class="row-v" id="e-net">—</span></div>
+      <div class="row"><span class="row-k">POWER</span><span class="row-v" id="e-bat">UNAVAILABLE</span></div>
+    </section>
+  </aside>
+
+  <!-- CONVERSATION -->
+  <section class="conversation" id="conversation" aria-live="polite"></section>
+
+  <!-- BOTTOM -->
+  <footer class="hud-bottom">
+    <div class="controls">
+
+      <button class="ctrl primary" id="btn-mic" type="button" aria-label="Activate voice input">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <rect x="9" y="2.5" width="6" height="11.5" rx="3"/>
+          <path d="M5 11.5a7 7 0 0 0 14 0M12 18.5V22M8.5 22h7"/>
+        </svg>
+        <span class="ctrl-label">VOICE</span>
+      </button>
+
+      <button class="ctrl" id="btn-speak" type="button" aria-label="Toggle voice output">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M11 5 6.5 9H3v6h3.5L11 19V5z"/>
+          <path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.5 6.5a8 8 0 0 1 0 11"/>
+        </svg>
+        <span class="ctrl-label" id="label-speak">VOICE ON</span>
+      </button>
+
+      <button class="ctrl" id="btn-sound" type="button" aria-label="Toggle interface sound">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 12h2l3-5v10l-3-5H4z"/>
+          <circle cx="14" cy="12" r="1.6"/>
+          <circle cx="18.5" cy="12" r="1"/>
+        </svg>
+        <span class="ctrl-label" id="label-sound">SOUND ON</span>
+      </button>
+
+      <div class="ctrl-divider"></div>
+
+      <button class="ctrl" data-mode="home" id="btn-home" type="button">HOME</button>
+      <button class="ctrl" data-mode="space" id="btn-space" type="button">SPACE</button>
+      <button class="ctrl" data-mode="car" id="btn-car" type="button">CAR</button>
+
+      <div class="ctrl-divider"></div>
+
+      <button class="ctrl" id="btn-settings" type="button" aria-label="Settings">SETTINGS</button>
+      <button class="ctrl" id="btn-help" type="button" aria-label="Help">HELP</button>
+      <button class="ctrl" id="btn-fullscreen" type="button" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+        </svg>
+      </button>
+      <button class="ctrl danger" id="btn-shutdown" type="button" aria-label="Shutdown">&#9211;</button>
+
+    </div>
+  </footer>
+
+  <!-- SETTINGS DRAWER -->
+  <section class="drawer" id="settings" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="panel-title">SYSTEM SETTINGS</div>
+      <button class="drawer-close" id="settings-close" type="button">ESC</button>
+    </div>
+    <div class="drawer-body">
+      <label class="field">
+        <span>Voice engine</span>
+        <select id="set-voice"></select>
+      </label>
+      <label class="field">
+        <span>Voice speed <b id="val-rate">1.00</b></span>
+        <input type="range" id="set-rate" min="0.6" max="1.6" step="0.05" value="1" />
+      </label>
+      <label class="field">
+        <span>Voice pitch <b id="val-pitch">1.00</b></span>
+        <input type="range" id="set-pitch" min="0.6" max="1.5" step="0.05" value="1" />
+      </label>
+      <label class="field">
+        <span>Render quality</span>
+        <select id="set-quality">
+          <option value="AUTO">AUTO</option>
+          <option value="LOW">LOW</option>
+          <option value="MEDIUM">MEDIUM</option>
+          <option value="HIGH">HIGH</option>
+          <option value="ULTRA">ULTRA</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Operator name</span>
+        <input type="text" id="set-name" maxlength="24" placeholder="Enter name" />
+      </label>
+      <div class="field-hint">Preferences are stored only in this browser's localStorage. Nothing is uploaded.</div>
+    </div>
+  </section>
+
+  <!-- HELP DRAWER -->
+  <section class="drawer right" id="help" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="panel-title">CAPABILITIES</div>
+      <button class="drawer-close" id="help-close" type="button">ESC</button>
+    </div>
+    <div class="drawer-body">
+      <div class="help-block"><b>Voice</b><span>Press SPACE or the VOICE button, then speak naturally.</span></div>
+      <div class="help-block"><b>Keyboard</b><span>SPACE voice · 1 home · 2 space · 3 car · F fullscreen · ESC close</span></div>
+      <div class="help-block"><b>Time</b><span>"what time is it" · "tell me the date"</span></div>
+      <div class="help-block"><b>Modes</b><span>"enter space mode" · "enter car mode" · "go home"</span></div>
+      <div class="help-block"><b>System</b><span>"system status" · "reset" · "restart" · "shutdown"</span></div>
+      <div class="help-block"><b>Memory</b><span>"my name is Alex" · "clear memory"</span></div>
+      <div class="help-block"><b>Web</b><span>"open example.com" · "search quantum physics"</span></div>
+      <div class="help-block"><b>Interface</b><span>"fullscreen" · "stop" · "help" · "what can you do"</span></div>
+    </div>
+  </section>
+
+  <!-- TOP-RIGHT TOAST -->
+  <div class="toast" id="toast"></div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
